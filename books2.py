@@ -52,6 +52,20 @@ BOOKS = [
 async def get_all_books():
     return BOOKS
 
+@app.get("/books/{book_id}")
+async def read_book(book_id:int):
+    for book in BOOKS:
+        if book_id == book.id:
+            return book
+    return {"error":"Book not found"}
+
+@app.get("/books/")
+async def read_book_by_rating(book_rating:int):
+    books_to_return:list[Book] = []
+    for book in BOOKS:
+        if book.rating == book_rating:
+            books_to_return.append(book)
+    return books_to_return
 
 @app.post("/create_book")
 async def create_book(book: BookRequest):
