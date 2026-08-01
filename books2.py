@@ -74,6 +74,25 @@ async def create_book(book: BookRequest):
     BOOKS.append(find_book_id(new_book))
     return BOOKS[-1]
 
+@app.put("/books/update_book")
+async def update_book(book:BookRequest):
+    new_book = Book(**book.model_dump())
+    for i in range(len(BOOKS)):
+        if BOOKS[i].id == new_book.id:
+
+            BOOKS[i] = new_book
+            return new_book
+    return {"error":"Book not found"}
+
+@app.delete("/books/{book_id}")
+async def delete_book(book_id:int):
+    for i in range(len(BOOKS)):
+        if BOOKS[i].id == book_id:
+            deleted_book:Book =BOOKS.pop(i)
+            return  deleted_book
+            return {"message":f"Book with id {book_id} successfully removed"}
+    return {"error":"Boo not available"}
+
 
 def find_book_id(book: Book):
     book.id = 1 if len(BOOKS) == 0 else BOOKS[-1].id + 1
