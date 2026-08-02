@@ -1,8 +1,7 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Path
 from pydantic import BaseModel, Field
 
 app = FastAPI()
-
 
 class Book:
     id: int
@@ -27,7 +26,7 @@ class BookRequest(BaseModel):
     author: str = Field(min_length=1)
     description: str = Field(min_length=1, max_length=100)
     rating: int = Field(gt=-1, lt=6)
-    published_date:int =Field(gt=0)
+    published_date:int =Field(gt=1999,lt=2040)
 
     model_config = {
         "json_schema_extra": {
@@ -57,7 +56,7 @@ async def get_all_books():
     return BOOKS
 
 @app.get("/books/{book_id}")
-async def read_book(book_id:int):
+async def read_book(book_id:int=Path(gt=0)):
     for book in BOOKS:
         if book_id == book.id:
             return book
@@ -97,7 +96,7 @@ async def update_book(book:BookRequest):
     return {"error":"Book not found"}
 
 @app.delete("/books/{book_id}")
-async def delete_book(book_id:int):
+async def delete_book(book_id:int=Path(gt=0)):
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book_id:
             deleted_book:Book =BOOKS.pop(i)
