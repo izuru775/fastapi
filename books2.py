@@ -10,13 +10,15 @@ class Book:
     author: str
     description: str
     rating: int
+    published_date:int
 
-    def __init__(self, id: int, title: str, author: str, description: str, rating: int):
+    def __init__(self, id: int, title: str, author: str, description: str, rating: int,published_date:int):
         self.id = id
         self.title = title
         self.author = author
         self.description = description
         self.rating = rating
+        self.published_date = published_date
 
 
 class BookRequest(BaseModel):
@@ -25,6 +27,7 @@ class BookRequest(BaseModel):
     author: str = Field(min_length=1)
     description: str = Field(min_length=1, max_length=100)
     rating: int = Field(gt=-1, lt=6)
+    published_date:int =Field(gt=0)
 
     model_config = {
         "json_schema_extra": {
@@ -32,19 +35,20 @@ class BookRequest(BaseModel):
                 "title": "A new book",
                 "author": "Isuru",
                 "description": "A new description of a book",
-                "rating": 5
+                "rating": 5,
+                "published_date":2024
             }
         }
     }
 
 
 BOOKS = [
-    Book(1, "Computer Science Pro", "Isuru", "A very nice book!", 5),
-    Book(2, "Be fast with FastAPI", "Isuru", "A great book!", 5),
-    Book(3, "Master API", "Isuru", "A awesome book!", 5),
-    Book(4, "HP1", "Author One", "Book Description", 2),
-    Book(5, "HP2", "Author Two", "Book Description", 3),
-    Book(6, "HP3", "Author Three", "Book Description", 1)
+    Book(1, "Computer Science Pro", "Isuru", "A very nice book!", 5,2023),
+    Book(2, "Be fast with FastAPI", "Isuru", "A great book!", 5,2025),
+    Book(3, "Master API", "Isuru", "A awesome book!", 5,2014),
+    Book(4, "HP1", "Author One", "Book Description", 2,2025),
+    Book(5, "HP2", "Author Two", "Book Description", 3,2018),
+    Book(6, "HP3", "Author Three", "Book Description", 1,2021)
 ]
 
 
@@ -64,6 +68,14 @@ async def read_book_by_rating(book_rating:int):
     books_to_return:list[Book] = []
     for book in BOOKS:
         if book.rating == book_rating:
+            books_to_return.append(book)
+    return books_to_return
+
+@app.get("/books/publish/")
+async def read_book_by_published_date(published_date:int):
+    books_to_return =[]
+    for book in BOOKS:
+        if book.published_date == published_date:
             books_to_return.append(book)
     return books_to_return
 
@@ -90,8 +102,7 @@ async def delete_book(book_id:int):
         if BOOKS[i].id == book_id:
             deleted_book:Book =BOOKS.pop(i)
             return  deleted_book
-            return {"message":f"Book with id {book_id} successfully removed"}
-    return {"error":"Boo not available"}
+    return {"error":"Book not found"}
 
 
 def find_book_id(book: Book):
