@@ -1,5 +1,7 @@
-from fastapi import FastAPI, Path
+from fastapi import FastAPI, Path, Query, HTTPException
 from pydantic import BaseModel, Field
+from pygments.lexers import stata
+from starlette import status
 
 app = FastAPI()
 
@@ -60,10 +62,10 @@ async def read_book(book_id:int=Path(gt=0)):
     for book in BOOKS:
         if book_id == book.id:
             return book
-    return {"error":"Book not found"}
+    raise HTTPException(status_code=404,detail="Item not found")
 
 @app.get("/books/")
-async def read_book_by_rating(book_rating:int):
+async def read_book_by_rating(book_rating:int= Query(gt=0,lt=6)):
     books_to_return:list[Book] = []
     for book in BOOKS:
         if book.rating == book_rating:
@@ -71,7 +73,7 @@ async def read_book_by_rating(book_rating:int):
     return books_to_return
 
 @app.get("/books/publish/")
-async def read_book_by_published_date(published_date:int):
+async def read_book_by_published_date(published_date:int=Query(gt=1991,lt=2040)):
     books_to_return =[]
     for book in BOOKS:
         if book.published_date == published_date:
@@ -87,21 +89,22 @@ async def create_book(book: BookRequest):
 
 @app.put("/books/update_book")
 async def update_book(book:BookRequest):
-    new_book = Book(**book.model_dump())
+    new_book:Book = Book(**book.model_dump())
     for i in range(len(BOOKS)):
         if BOOKS[i].id == new_book.id:
-
             BOOKS[i] = new_book
             return new_book
-    return {"error":"Book not found"}
+    raise HTTPException(status_code=404,detail="Book not found")
+
 
 @app.delete("/books/{book_id}")
 async def delete_book(book_id:int=Path(gt=0)):
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book_id:
             deleted_book:Book =BOOKS.pop(i)
-            return  deleted_book
-    return {"error":"Book not found"}
+            return deleted_book
+    raise HTTPException(status_code=404,detail="Book not found")
+
 
 
 def find_book_id(book: Book):
