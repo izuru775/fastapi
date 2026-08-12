@@ -1,6 +1,7 @@
-def main():
-    print("Hello from todoapp!")
+from fastapi import FastAPI
+import models
+from database import engine
 
+app = FastAPI()
 
-if __name__ == "__main__":
-    main()
+models.Base.metadata.create_all(bind=engine)
