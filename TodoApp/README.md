@@ -42,7 +42,7 @@ Reads `pyproject.toml` (and `uv.lock` if present) and creates `.venv` with every
 No need to manually activate `.venv` — prefix commands with `uv run`:
 
 ```
-uv run uvicorn TodoApp:app --reload
+uv run uvicorn main:app --reload
 uv run python main.py
 ```
 
