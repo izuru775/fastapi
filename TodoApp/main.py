@@ -1,6 +1,11 @@
-from fastapi import FastAPI
+from typing import Annotated
+
+from sqlalchemy.orm import Session
+from fastapi import FastAPI,Depends
 import models
+from models import Todos
 from database import engine, SessionLocal
+
 
 app = FastAPI()
 
@@ -13,3 +18,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.get("/")
+async def read_all(db:Annotated[Session,Depends(get_db)]):
+    return db.query(Todos).all()
