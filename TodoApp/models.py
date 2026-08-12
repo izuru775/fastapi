@@ -3,7 +3,7 @@ from sqlalchemy import String,Integer,Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 class Todos(Base):
-    __Tablename__="todos"
+    __tablename__="todos"
 
     id :Mapped[int]= mapped_column(Integer,primary_key=True,index=True)
     title:Mapped[str] = mapped_column(String)
