@@ -37,3 +37,9 @@ async def read_todo(db:db_dependency,todo_id:int=Path(gt=0)):
     if todo_model is not None:
         return todo_model
     raise HTTPException(status_code=404,detail="Todo not found")
+
+@app.post("/todo",status_code=status.HTTP_201_CREATED)
+async def create_todo(db:db_dependency,todo_request:TodoRequest):
+    todo_model:Todos = Todos(**todo_request.model_dump())
+    db.add(todo_model)
+    db.commit()
