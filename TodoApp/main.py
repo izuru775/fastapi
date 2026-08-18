@@ -69,9 +69,11 @@ async def update_todo(db:db_dependency,
 async def delete_todo(db:db_dependency,todo_id:int=Path(gt=0)):
     todo_model:Todos |None = db.scalar(select(Todos).where(Todos.id==todo_id))
 
-    if todo_model is not None:
-        db.delete(todo_model)
-        db.commit()
-    else:
+    if todo_model is None:
         raise HTTPException(status_code=404,detail="Todo not found")
+
+    db.delete(todo_model)
+    db.commit()
+
+
 
