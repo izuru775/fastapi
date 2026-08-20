@@ -7,20 +7,25 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
 from database import SessionLocal
 from models import Users
 from pwdlib import PasswordHash
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"]
+)
 
 # to get a string like this run:
 # openssl rand -hex 32
 SECRET_KEY = "42ac2f59959b4f930099497bd732708131be7fc499cc49e2b8d6b25cb12ef297"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=20
+
+oauth2_scheme =OAuth2PasswordBearer(tokenUrl="auth/token")
 
 def get_db():
     db = SessionLocal()
@@ -48,12 +53,13 @@ password_hash =  PasswordHash.recommended()
 def hash_password(password):
     return password_hash.hash(password)
 
-def authenticate_user(username:str,password:str,db:db_dependency)->bool|Users:
+
+def authenticate_user(username:str,password:str,db:db_dependency)->None|Users:
     user:Users|None = db.scalar(select(Users).where(Users.username==username))
     if not user:
-        return False
+        return None
     if not password_hash.verify(password,user.hashed_password):
-        return False
+        return None
     return user
 
 def create_access_token(data:dict,expires_delta:timedelta|None=None):
@@ -66,7 +72,28 @@ def create_access_token(data:dict,expires_delta:timedelta|None=None):
     encode_jwt= jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
     return encode_jwt
 
-@router.post("/auth",status_code=status.HTTP_201_CREATED)
+async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dependency):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        username:str=payload.get("sub")
+        user_id:int=payload.get("id")
+        if username is None or user_id is None:
+            raise credentials_exception
+        user = db.scalar(select(Users).where(Users.id == user_id))
+        if not user:
+            raise credentials_exception
+        else:
+            return user
+    except InvalidTokenError:
+        raise credentials_exception
+
+
+@router.post("/",status_code=status.HTTP_201_CREATED)
 async def create_user(db:db_dependency,
                       create_user_request:CreateUserRequest):
     user_model:Users = Users(
@@ -90,7 +117,7 @@ async def create_user(db:db_dependency,
 @router.post("/token",response_model=Token)
 async def login_for_access_token(form_data:Annotated[OAuth2PasswordRequestForm,Depends()],
                                  db:db_dependency):
-    user:bool|Users = authenticate_user(form_data.username,form_data.password,db)
+    user:None|Users = authenticate_user(form_data.username,form_data.password,db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -99,4 +126,4 @@ async def login_for_access_token(form_data:Annotated[OAuth2PasswordRequestForm,D
         )
     access_token_expires = timedelta(ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub":user.username,"id":user.id},expires_delta=access_token_expires)
-    return {"access_token":access_token,"token_type":"bearer"}
+    return Token(access_token=access_token,token_type="bearer")
