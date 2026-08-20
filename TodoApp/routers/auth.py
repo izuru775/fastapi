@@ -4,7 +4,8 @@ from fastapi import APIRouter, status, Depends
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
-from watchfiles.run import catch_sigterm
+from sqlalchemy import select
+from fastapi.security import OAuth2PasswordRequestForm
 
 from database import SessionLocal
 from models import Users
@@ -34,6 +35,13 @@ password_hash =  PasswordHash.recommended()
 def hash_password(password):
     return password_hash.hash(password)
 
+def authenticate_user(username:str,password:str,db:db_dependency):
+    user:Users| None = db.scalar(select(Users).where(Users.username==username))
+    if not user:
+        return False
+    return password_hash.verify(password,user.hashed_password)
+
+
 @router.post("/auth",status_code=status.HTTP_201_CREATED)
 async def create_user(db:db_dependency,
                       create_user_request:CreateUserRequest):
@@ -54,3 +62,9 @@ async def create_user(db:db_dependency,
         return {"error":"Duplicate or bad constraint","description":e.orig}
     except SQLAlchemyError as e:
         return {"error":"A database error occurred","description":str(e)}
+
+@router.post("/token")
+async def login_for_access_token(form_data:Annotated[OAuth2PasswordRequestForm,Depends()],
+                                 db:db_dependency):
+    is_authenticated = authenticate_user(form_data.username,form_data.password,db)
+    return is_authenticated
