@@ -59,6 +59,61 @@ source .venv/bin/activate   # macOS/Linux
 uv export -o requirements.txt
 ```
 
+## 6. SQLite3 command line
+
+Open (or create) a database file:
+
+```
+sqlite3 mydatabase.db
+```
+
+This drops you into the `sqlite>` interactive shell. From there:
+
+```sql
+.tables                      -- list all tables
+.schema users                -- show CREATE TABLE statement for a table
+.headers on                  -- show column names in query output
+.mode column                 -- pretty-print query results in columns
+.mode csv                    -- output results as CSV instead
+.output out.csv               -- redirect output to a file (use .output stdout to reset)
+.quit                        -- exit the shell
+```
+
+Run SQL directly (still inside the shell):
+
+```sql
+SELECT * FROM users;
+SELECT * FROM users WHERE username = 'sam';
+INSERT INTO users (username, email) VALUES ('sam', 'sam@example.com');
+DELETE FROM users WHERE id = 3;
+```
+
+Run a one-off query without entering the interactive shell:
+
+```
+sqlite3 mydatabase.db "SELECT * FROM users;"
+```
+
+Run a `.sql` script file against a database:
+
+```
+sqlite3 mydatabase.db < schema.sql
+```
+
+Dump the whole database to a `.sql` file (useful for backups/version control):
+
+```
+sqlite3 mydatabase.db .dump > backup.sql
+```
+
+Restore from a dump:
+
+```
+sqlite3 newdatabase.db < backup.sql
+```
+
+> Note: `sqlite3` here is the standalone SQLite CLI tool, separate from Python's built-in `sqlite3` module (`import sqlite3`) used inside your app code (e.g. via SQLAlchemy's `sqlite:///mydatabase.db` connection string).
+
 ## Notes
 
 - `uv add` requires a `pyproject.toml` in the current or a parent directory. If you only have a `requirements.txt`, either run `uv init` first, or use the pip-compatible interface instead: `uv pip install <package>`.
