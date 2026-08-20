@@ -2,7 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, status, Depends
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
+from watchfiles.run import catch_sigterm
 
 from database import SessionLocal
 from models import Users
@@ -44,8 +46,11 @@ async def create_user(db:db_dependency,
         role=create_user_request.role,
         is_active=True
     )
-
-    db.add(user_model)
-    db.commit()
-
-    return user_model
+    try:
+        db.add(user_model)
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        return {"error":"Duplicate or bad constraint","description":e.orig}
+    except SQLAlchemyError as e:
+        return {"error":"A database error occurred","description":str(e)}
