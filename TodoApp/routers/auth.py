@@ -1,5 +1,3 @@
-import email
-
 from fastapi import APIRouter,status
 from pydantic import BaseModel
 from models import Users
