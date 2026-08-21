@@ -5,14 +5,13 @@ import jwt
 from fastapi import APIRouter, status, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
 from sqlalchemy import select
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
-from database import SessionLocal
 from models import Users
 from pwdlib import PasswordHash
+from .dependencies import db_dependency
 
 router = APIRouter(
     prefix="/auth",
@@ -27,14 +26,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES=20
 
 oauth2_scheme =OAuth2PasswordBearer(tokenUrl="auth/token")
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-db_dependency = Annotated[Session,Depends(get_db)]
 
 class CreateUserRequest(BaseModel):
     username:str

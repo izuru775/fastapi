@@ -2,23 +2,13 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, status, Path
 from models import Todos, Users
-from database import SessionLocal
 from .auth import get_current_user
+from .dependencies import db_dependency
 
 router = APIRouter()
 
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-db_dependency = Annotated[Session,Depends(get_db)]
 user_dependency =Annotated[Users,Depends(get_current_user)]
 
 class TodoRequest(BaseModel):
