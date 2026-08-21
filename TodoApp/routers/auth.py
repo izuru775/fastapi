@@ -3,7 +3,7 @@ from typing import Annotated, Any
 
 import jwt
 from fastapi import APIRouter, status, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import select
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
@@ -38,6 +38,18 @@ class CreateUserRequest(BaseModel):
 class Token(BaseModel):
     access_token:str
     token_type:str
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id:int
+    email:str
+    username:str
+    first_name:str
+    last_name:str
+    is_active:bool
+    role:str
+
 
 password_hash =  PasswordHash.recommended()
 
@@ -81,7 +93,7 @@ async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dep
     user = db.scalar(select(Users).where(Users.id == user_id))
     if user is None:
         raise credentials_exception
-    return user
+    return UserOut.model_validate(user)
 
 
 @router.post("/",status_code=status.HTTP_201_CREATED)
