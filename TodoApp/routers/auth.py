@@ -75,13 +75,13 @@ async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dep
         user_id:int=payload.get("id")
         if username is None or user_id is None:
             raise credentials_exception
-        user = db.scalar(select(Users).where(Users.id == user_id))
-        if not user:
-            raise credentials_exception
-        else:
-            return user
     except InvalidTokenError:
         raise credentials_exception
+
+    user = db.scalar(select(Users).where(Users.id == user_id))
+    if user is None:
+        raise credentials_exception
+    return user
 
 
 @router.post("/",status_code=status.HTTP_201_CREATED)
