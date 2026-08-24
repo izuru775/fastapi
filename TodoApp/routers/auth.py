@@ -9,6 +9,7 @@ from sqlalchemy import select
 from fastapi.security import OAuth2PasswordRequestForm,OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
+from config import Settings, get_settings
 from models import Users
 from pwdlib import PasswordHash
 from .dependencies import db_dependency
@@ -18,11 +19,6 @@ router = APIRouter(
     tags=["auth"]
 )
 
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = "42ac2f59959b4f930099497bd732708131be7fc499cc49e2b8d6b25cb12ef297"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES=20
 
 oauth2_scheme =OAuth2PasswordBearer(tokenUrl="auth/token")
 
@@ -65,24 +61,24 @@ def authenticate_user(username:str,password:str,db:db_dependency)->None|Users:
         return None
     return user
 
-def create_access_token(data:dict,expires_delta:timedelta|None=None):
+def create_access_token(data:dict,settings: Annotated[Settings, Depends(get_settings)],expires_delta:timedelta|None=None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc)+expires_delta
     else:
         expire = datetime.now(timezone.utc)+timedelta(minutes=15)
     to_encode.update({"exp":expire})
-    encode_jwt= jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
+    encode_jwt= jwt.encode(to_encode,settings.SECRET_KEY,algorithm=settings.ALGORITHM)
     return encode_jwt
 
-async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dependency):
+async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dependency,settings: Annotated[Settings, Depends(get_settings)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        payload = jwt.decode(token,settings.SECRET_KEY,algorithms=[settings.ALGORITHM])
         username:str=payload.get("sub")
         user_id:int=payload.get("id")
         if username is None or user_id is None:
@@ -119,7 +115,8 @@ async def create_user(db:db_dependency,
 
 @router.post("/token",response_model=Token)
 async def login_for_access_token(form_data:Annotated[OAuth2PasswordRequestForm,Depends()],
-                                 db:db_dependency):
+                                 db:db_dependency,
+                                 settings: Annotated[Settings, Depends(get_settings)]):
     user:None|Users = authenticate_user(form_data.username,form_data.password,db)
     if not user:
         raise HTTPException(
@@ -127,6 +124,6 @@ async def login_for_access_token(form_data:Annotated[OAuth2PasswordRequestForm,D
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub":user.username,"id":user.id},expires_delta=access_token_expires)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(data={"sub":user.username,"id":user.id},settings=settings, expires_delta=access_token_expires)
     return Token(access_token=access_token,token_type="bearer")
