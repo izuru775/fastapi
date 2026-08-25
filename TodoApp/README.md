@@ -114,6 +114,64 @@ sqlite3 newdatabase.db < backup.sql
 
 > Note: `sqlite3` here is the standalone SQLite CLI tool, separate from Python's built-in `sqlite3` module (`import sqlite3`) used inside your app code (e.g. via SQLAlchemy's `sqlite:///mydatabase.db` connection string).
 
+## 7. Alembic (database migrations)
+
+Add it to the project like any other dependency, then run it through `uv run` so it uses the project's `.venv`:
+
+```
+uv add alembic
+uv run alembic init alembic
+```
+
+`alembic init alembic` creates an `alembic/` folder (versions live in `alembic/versions/`) plus a top-level `alembic.ini` config file.
+
+### One-time setup
+
+Two things to point at your database before generating migrations:
+
+- In `alembic.ini`, set `sqlalchemy.url` — or better, leave it blank and set it dynamically in `alembic/env.py` (e.g. read from your app's settings/env vars) so you don't hardcode credentials.
+- In `alembic/env.py`, set `target_metadata` to your SQLAlchemy models' `Base.metadata` (e.g. `from myapp.models import Base` then `target_metadata = Base.metadata`). This is required for autogenerate to detect model changes.
+
+### Creating migrations
+
+```
+uv run alembic revision -m "add users table"                 # empty migration, write it by hand
+uv run alembic revision --autogenerate -m "add users table"   # auto-detect model changes vs. db
+```
+
+Autogenerate compares `target_metadata` against the current database schema and writes the `upgrade()`/`downgrade()` diff for you — always review the generated file before applying it, it doesn't catch everything (e.g. table/column renames show up as drop+add).
+
+### Applying / reverting migrations
+
+```
+uv run alembic upgrade head       # apply all pending migrations
+uv run alembic upgrade +1         # apply just the next one
+uv run alembic downgrade -1       # revert the last migration
+uv run alembic downgrade base     # revert all migrations
+uv run alembic downgrade <rev>    # revert/upgrade to a specific revision id
+```
+
+### Inspecting state and history
+
+```
+uv run alembic current            # show revision the db is currently at
+uv run alembic history            # list all migrations, oldest to newest
+uv run alembic history --verbose  # same, with full details per revision
+uv run alembic show <rev>         # show details of one specific revision
+uv run alembic heads              # show head(s) — more than one means branched history
+```
+
+### Branches and out-of-band changes
+
+```
+uv run alembic merge -m "merge heads" <rev1> <rev2>   # merge two divergent heads into one
+uv run alembic stamp head                              # mark db as up to date WITHOUT running migrations
+```
+
+`stamp` is useful when the schema was already brought up to date some other way (e.g. restored from a backup that matches `head`) and you just need Alembic's bookkeeping to agree.
+
+> Note: keep `alembic/versions/` in version control alongside your code — migrations are the source of truth for schema history, not just a local artifact.
+
 ## Notes
 
 - `uv add` requires a `pyproject.toml` in the current or a parent directory. If you only have a `requirements.txt`, either run `uv init` first, or use the pip-compatible interface instead: `uv pip install <package>`.
