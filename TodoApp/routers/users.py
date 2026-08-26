@@ -29,7 +29,8 @@ class UserOut(BaseModel):
     first_name:str
     last_name:str
     is_active:bool
-    role:str
+    role:str|None
+    phone_number:str|None
 
 class PasswordChangeRequest(BaseModel):
     password:str
