@@ -30,6 +30,7 @@ class CreateUserRequest(BaseModel):
     last_name:str
     password:str
     role:str
+    phone_number:str|None
 
 class Token(BaseModel):
     access_token:str
@@ -44,8 +45,8 @@ class UserOut(BaseModel):
     first_name:str
     last_name:str
     is_active:bool
-    role:str
-
+    role:str|None
+    phone_number:str|None
 
 password_hash =  PasswordHash.recommended()
 
@@ -102,6 +103,7 @@ async def create_user(db:db_dependency,
         last_name=create_user_request.last_name,
         hashed_password= hash_password(create_user_request.password),
         role=create_user_request.role,
+        phone_number=create_user_request.phone_number,
         is_active=True
     )
     try:
