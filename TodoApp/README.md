@@ -42,8 +42,8 @@ Reads `pyproject.toml` (and `uv.lock` if present) and creates `.venv` with every
 No need to manually activate `.venv` — prefix commands with `uv run`:
 
 ```
-uv run uvicorn main:app --reload
-uv run python main.py
+uvicorn main:app --reload
+python main.py
 ```
 
 If you do want the venv active in your shell (e.g. so your IDE picks it up):
@@ -120,7 +120,7 @@ Add it to the project like any other dependency, then run it through `uv run` so
 
 ```
 uv add alembic
-uv run alembic init alembic
+alembic init alembic
 ```
 
 `alembic init alembic` creates an `alembic/` folder (versions live in `alembic/versions/`) plus a top-level `alembic.ini` config file.
@@ -135,8 +135,8 @@ Two things to point at your database before generating migrations:
 ### Creating migrations
 
 ```
-uv run alembic revision -m "add users table"                 # empty migration, write it by hand
-uv run alembic revision --autogenerate -m "add users table"   # auto-detect model changes vs. db
+alembic revision -m "add users table"                 # empty migration, write it by hand
+alembic revision --autogenerate -m "add users table"   # auto-detect model changes vs. db
 ```
 
 Autogenerate compares `target_metadata` against the current database schema and writes the `upgrade()`/`downgrade()` diff for you — always review the generated file before applying it, it doesn't catch everything (e.g. table/column renames show up as drop+add).
@@ -144,28 +144,28 @@ Autogenerate compares `target_metadata` against the current database schema and 
 ### Applying / reverting migrations
 
 ```
-uv run alembic upgrade head       # apply all pending migrations
-uv run alembic upgrade +1         # apply just the next one
-uv run alembic downgrade -1       # revert the last migration
-uv run alembic downgrade base     # revert all migrations
-uv run alembic downgrade <rev>    # revert/upgrade to a specific revision id
+alembic upgrade head       # apply all pending migrations
+alembic upgrade +1         # apply just the next one
+alembic downgrade -1       # revert the last migration
+alembic downgrade base     # revert all migrations
+alembic downgrade <rev>    # revert/upgrade to a specific revision id
 ```
 
 ### Inspecting state and history
 
 ```
-uv run alembic current            # show revision the db is currently at
-uv run alembic history            # list all migrations, oldest to newest
-uv run alembic history --verbose  # same, with full details per revision
-uv run alembic show <rev>         # show details of one specific revision
-uv run alembic heads              # show head(s) — more than one means branched history
+alembic current            # show revision the db is currently at
+alembic history            # list all migrations, oldest to newest
+alembic history --verbose  # same, with full details per revision
+alembic show <rev>         # show details of one specific revision
+alembic heads              # show head(s) — more than one means branched history
 ```
 
 ### Branches and out-of-band changes
 
 ```
-uv run alembic merge -m "merge heads" <rev1> <rev2>   # merge two divergent heads into one
-uv run alembic stamp head                              # mark db as up to date WITHOUT running migrations
+alembic merge -m "merge heads" <rev1> <rev2>   # merge two divergent heads into one
+alembic stamp head                              # mark db as up to date WITHOUT running migrations
 ```
 
 `stamp` is useful when the schema was already brought up to date some other way (e.g. restored from a backup that matches `head`) and you just need Alembic's bookkeeping to agree.
