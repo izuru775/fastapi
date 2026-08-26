@@ -13,7 +13,8 @@ class Users(Base):
     last_name:Mapped[str] = mapped_column(String)
     hashed_password:Mapped[str]=mapped_column(String)
     is_active:Mapped[bool] = mapped_column(Boolean,default=True)
-    role:Mapped[str]= mapped_column(String)
+    role:Mapped[str]= mapped_column(String,nullable=True)
+    phone_number:Mapped[str]= mapped_column(String,nullable=True)
 
 
 class Todos(Base):
