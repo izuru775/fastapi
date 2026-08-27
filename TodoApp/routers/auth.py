@@ -2,7 +2,7 @@ from datetime import timedelta, datetime, timezone
 from typing import Annotated, Any
 
 import jwt
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException,Request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import select
@@ -13,6 +13,7 @@ from config import Settings, get_settings
 from models import Users
 from pwdlib import PasswordHash
 from .dependencies import db_dependency
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter(
     prefix="/auth",
@@ -49,6 +50,16 @@ class UserOut(BaseModel):
     phone_number:str|None
 
 password_hash =  PasswordHash.recommended()
+
+templates = Jinja2Templates(directory="templates")
+
+### Pages ###
+@router.get("/login-page")
+def render_login_page(request:Request):
+    return templates.TemplateResponse(name="login.html",request=request)
+
+
+### Endpoints ###
 
 def hash_password(password):
     return password_hash.hash(password)
