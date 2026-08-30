@@ -37,9 +37,8 @@ async def render_todo_page(request:Request,db:db_dependency):
         user = await get_current_user(token=request.cookies.get("access_token",""),db=db,settings=get_settings())
         if user is None:
             return redirect_to_login()
-        print(user.id)
         todos = db.scalars(select(Todos).where(Todos.owner_id==user.id)).all()
-        return templates.TemplateResponse(name="todo.html",request=request,context={"todos":todos})
+        return templates.TemplateResponse(name="todo.html",request=request,context={"todos":todos,"user":user})
     except:
         return redirect_to_login()
 
