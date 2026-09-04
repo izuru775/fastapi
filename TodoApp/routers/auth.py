@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated
 
 import jwt
 from fastapi import APIRouter, status, Depends, HTTPException,Request
@@ -94,8 +94,8 @@ async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:db_dep
     )
     try:
         payload = jwt.decode(token,settings.SECRET_KEY,algorithms=[settings.ALGORITHM])
-        username:str=payload.get("sub")
-        user_id:int=payload.get("id")
+        username:str|None=payload.get("sub")
+        user_id:int|None =payload.get("id")
         if username is None or user_id is None:
             raise credentials_exception
     except InvalidTokenError:

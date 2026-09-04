@@ -32,14 +32,36 @@ def redirect_to_login():
 
 ### Pages ###
 @router.get("/todo-page")
+async def render_todo_page_1(request:Request,db:db_dependency):
+    try:
+        user = await get_current_user(request.cookies.get("access_token",""),db=db,settings=get_settings())
+        if user is None:
+            return redirect_to_login()
+        todos = db.scalars(select(Todos).where(Todos.owner_id==user.id)).all()
+        return templates.TemplateResponse(name="todo.html",request=request,context={"todos":todos,"user":user})
+    except Exception:
+        return redirect_to_login()
+
+@router.get("/add-todo-page")
 async def render_todo_page(request:Request,db:db_dependency):
     try:
         user = await get_current_user(token=request.cookies.get("access_token",""),db=db,settings=get_settings())
         if user is None:
             return redirect_to_login()
-        todos = db.scalars(select(Todos).where(Todos.owner_id==user.id)).all()
-        return templates.TemplateResponse(name="todo.html",request=request,context={"todos":todos,"user":user})
-    except:
+        return templates.TemplateResponse(name="add-todo.html",request=request,context={"user":user})
+    except Exception:
+        return redirect_to_login()
+
+@router.get("/edit-todo-page/{todo_id}")
+async def render_edit_todo_page(request:Request,db:db_dependency,todo_id:int=Path(gt=0)):
+    try:
+        user = await get_current_user(token=request.cookies.get("access_token",""),db=db,settings=get_settings())
+        print(user.id)
+        if user is None:
+            return redirect_to_login()
+        todo:Todos|None = db.scalar(select(Todos).where((Todos.id == todo_id)&(Todos.owner_id == user.id)))
+        return templates.TemplateResponse(name="edit-todo.html",request=request,context={"todo":todo})
+    except Exception:
         return redirect_to_login()
 
 ### Endpoints ###
